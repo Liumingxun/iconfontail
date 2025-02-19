@@ -1,0 +1,38 @@
+{
+  "name": "iconfontail",
+  "version": "1.0.0",
+  "description": "iconfontail is a powerful and easy-to-use tool for managing and using icon fonts with tailwindcss in your web projects.",
+  "type": "module",
+  "author": "lime <liumingxun@yeah.net>",
+  "keywords": [
+    "iconfont",
+    "tailwindcss",
+    "iconfontail"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "dev": "unbuild --stub",
+    "build": "unbuild",
+    "prepublishOnly": "pnpm run build",
+    "publish": "npm publish"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "unbuild": "^3.3.1"
+  },
+  "dependencies": {
+    "tailwindcss": "3"
+  }
+}
