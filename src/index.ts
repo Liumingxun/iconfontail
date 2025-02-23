@@ -7,9 +7,9 @@ type IconContent = string
 
 type Options = {
   /**
-   * Path to the SVG file
+   * Path to the SVG file or a record of icon names and their content
    */
-  source: string
+  source: string | Record<string, string>
   /**
    * Prefix for the generated icon classes
    */
@@ -34,19 +34,23 @@ function encodeSvg(svg: string) {
 }
 
 export default plugin.withOptions<Options>((options) => {
-  const source = readFileSync(resolve(options.source), 'utf-8')
   const prefix = options.prefix ?? ''
   let icons: Record<string, string> = {}
 
-  if (!options.extract) {
-    const regex = /<symbol id="([^"]+)".*?>(.*?)<\/symbol>/gim;
-    icons = Array.from(source.matchAll(regex))
-      .reduce<Record<string, string>>((set, [_, name, content]) => ({
-        ...set,
-        [name]: `<svg version="1.1" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">${content}</svg>`
-      }), {});
+  if (typeof options.source === 'string') {
+    const source = readFileSync(resolve(options.source), 'utf-8')
+
+    if (!options.extract) {
+      const regex = /<symbol id="([^"]+)".*?>(.*?)<\/symbol>/gim;
+      for (const match of source.matchAll(regex)) {
+        const [_, name, content] = match;
+        icons[name] = `<svg version="1.1" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">${content}</svg>`;
+      }
+    } else {
+      icons = options.extract(source)
+    }
   } else {
-    icons = options.extract(source)
+    icons = options.source
   }
 
   return ({ addUtilities }) => {
