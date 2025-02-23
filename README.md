@@ -1,6 +1,6 @@
-# IconFontail
+# Iconfontail
 
-IconFontail is a powerful and easy-to-use tool for managing and using icon fonts with tailwindcss in your web projects.
+Iconfontail is a powerful and easy-to-use tool for managing and using icon fonts with tailwindcss in your web projects.
 
 ## Features
 
