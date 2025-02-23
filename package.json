@@ -28,10 +28,8 @@
   "files": [
     "dist"
   ],
-  "devDependencies": {
-    "@types/node": "^22.13.4"
-  },
   "dependencies": {
+    "@types/node": "^22.13.4",
     "unbuild": "^3.3.1",
     "tailwindcss": "3"
   },
