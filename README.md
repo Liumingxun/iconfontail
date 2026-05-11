@@ -1,83 +1,76 @@
-# Iconfontail
+# iconfontail
 
-Iconfontail is a powerful and easy-to-use tool for managing and using icon fonts with tailwindcss in your web projects.
+将 [iconfont.cn](https://iconfont.cn) 图标集成到 Tailwind CSS v4 中，借助 Tree Shaking 自动优化图标体积。
 
-## Features
+## 安装
 
-- Simple integration with your web projects
-- Support for multiple icon font libraries
-- Easy customization of icons
-- Lightweight and fast
+|           npm           |           pnpm           |           bun           |
+| :---------------------: | :----------------------: | :---------------------: |
+| npm install iconfontail | pnpm install iconfontail | bun install iconfontail |
 
-## Installation
+> **同等依赖**：需要 Tailwind CSS v4
 
-|           npm           |           pnpm           |           yarn           |
-|:-----------------------:|:------------------------:|:------------------------:|
-| npm install iconfontail | pnpm install iconfontail | yarn install iconfontail |
+## 使用
 
-## Usage
+### 1. 下载 iconfont 资源
 
-If you are using [iconfont](https://www.iconfont.cn/) as your icon source:
+从 [iconfont.cn](https://iconfont.cn) 项目页面**下载至本地**，解压后将生成的 `iconfont.js` 和 `iconfont.css` 放入项目中。
 
-- You can download your icon zip file, and after unzipping it, you will see the `iconfont.js` file
-- Place this file in your project
-- Import this plugin in the tailwind configuration file, passing in the relative path of `iconfont.js`
-- Use it where you need it, without worrying about the file size
+### 2. 配置 Tailwind CSS v4
 
-```ts
-export default {
-  // ……
-  plugins: [
-    iconfontail({
-      source: './iconfont.js', // hard to parse, using `regexp` to extract
-    }),
-  ],
-  // ……
+在 Tailwind CSS 入口文件中引入插件：
+
+```css
+@import 'tailwindcss';
+@plugin 'iconfontail' {
+  /* 路径相对项目根目录 */
+  iconfontjs: iconfont.js;
+  iconfontcss: iconfont.css;
+}
+
+@font-face {
+  font-family: 'iconfont';
+  src:
+    url('/iconfont.woff2?t=1778462439025') format('woff2'),
+    url('/iconfont.woff?t=1778462439025') format('woff'),
+    url('/iconfont.ttf?t=1778462439025') format('truetype');
 }
 ```
 
-Or you can pass a Record directly as the source parameter for a JSON-like file:
+### 3. 在 HTML 中使用
 
-- such as [icones](https://icones.js.org/), you can pick some icons add to your bag
-- and then you click `Download Zip`, choose `JSON`:
+```html
+<!-- color 模式：显示原始 SVG 定义的颜色 -->
+<i class="icon-home color"></i>
 
-```ts
-import icones from './icones-bags.json'
-
-export default {
-  // ……
-  plugins: [
-    iconfontail({
-      source: icones.reduce((acc, { name, svg }) => {
-        acc[name] = svg
-        return acc
-      }, {}),
-    }),
-  ],
-  // ……
-}
+<!-- font 模式：使用 Unicode 渲染 -->
+<i class="icon-home font"></i>
 ```
 
-above situation see [example](https://github.com/Liumingxun/iconfontail/blob/main/example/tailwind.config.js)
+> 使用字体模式时，需确保页面已加载 iconfont 的字体文件（在 `iconfont.css` 中已通过 `@font-face` 引入）。
 
-Or if you are using the others with a non-JSON-like file:
+## FAQ
 
-- Copy the file that contains all SVG resources into your project
-- Import this plugin in the tailwind configuration file, passing in the relative path of that file
-- Pass an extract function as the plugin parameter, which should return a record of icon names and their content
+- 怎么修改图标大小？
 
-  **Notice**: the icon content should start with the `<svg>` root element that includes the `viewBox` attribute.  
+  使用任意可以修改 `font-size` 的方法，如 tailwind 的 `text-3xl`，或直接设置 `font-size`。
 
-- That's all! You can use it as needed!
+- 怎么修改图标颜色？
 
-## Contributing
+  color 模式下如果原始 svg 定义了颜色，则不支持修改颜色；如果原始 svg 使用 currentColor
 
-We welcome contributions! We're excited that you're interested in contributing to this project! Please feel free to open an issue or submit a pull request.
+## 工作原理
 
-## Inspire and Thanks
+iconfontail 是一个 Tailwind CSS v4 插件，它会：
 
-[Icons in Pure CSS - antfu](https://antfu.me/posts/icons-in-pure-css)
+1. 读取 iconfont.cn 生成的 JS 文件（Symbol）和 CSS 文件（Unicode）
+2. 解析 JS 中的 `<symbol>` 标签提取 SVG 图标，解析 CSS 中的 Unicode 映射
+3. 为每个图标生成两类工具类：
+   - **`.iconName.color`** — 将 SVG 内联为 `mask-image` 或 `background-image`
+   - **`.iconName.font::before`** — 使用 Unicode + `font-family: iconfont` 的字体图标方式
+
+由于生成的类名通过 Tailwind 工具类注册，未使用的图标会在构建时被 Tree Shaking 移除。
 
 ## License
 
-[MIT LICENSE](LICENSE)
+[MIT](./LICENSE)
