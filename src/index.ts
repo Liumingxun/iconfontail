@@ -2,12 +2,28 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import createPlugin from 'tailwindcss/plugin'
 
+interface IconfontJson {
+  id: string
+  name: string
+  font_family: string
+  css_prefix_text: string
+  description: string
+  glyphs: Glyph[]
+}
+
+interface Glyph {
+  icon_id: string
+  name: string
+  font_class: string
+  unicode: string
+  unicode_decimal: number
+}
+
 interface Options {
   iconfontjs: string
-  iconfontcss: string
+  iconfontjson: string
 }
 const symbolTag = /<symbol\s[^>]*?\bid="([^"]+)"[^>]*>(.*?)<\/symbol>/gi
-const unicodeTag = /\.([^:]+):before\s*\{[^}]*content:\s*"([^"]+)"/gi
 
 function encodeSvg(svg: string) {
   return svg
@@ -21,22 +37,29 @@ function encodeSvg(svg: string) {
 }
 
 const plugin: (opts: Options) => any = createPlugin.withOptions<Options>((opts) => {
-  if (!opts || !opts.iconfontjs || !opts.iconfontcss) {
-    console.warn('Iconfont plugin requires iconfontjs and iconfontcss options!')
+  if (!opts || !opts.iconfontjs || !opts.iconfontjson) {
+    console.warn('Iconfont plugin requires iconfontjs and iconfontjson options!')
     console.warn('Iconfont plugin will be skipped.')
     return () => {}
   }
 
   const jsSource = readFileSync(resolve(opts.iconfontjs), 'utf-8')
-  const cssSource = readFileSync(resolve(opts.iconfontcss), 'utf-8')
+  const jsonSource = JSON.parse(readFileSync(resolve(opts.iconfontjson), 'utf-8')) as IconfontJson
+
+  const fontFamily = jsonSource.font_family
+  const prefix = jsonSource.css_prefix_text
 
   const svgMap = new Map(Array.from(jsSource.matchAll(symbolTag), ([, name, content]) => [name, `<svg version="1.1" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">${content}</svg>`]))
-  const unicodeMap = new Map(Array.from(cssSource.matchAll(unicodeTag), ([, name, unicode]) => [name, unicode]))
+  const unicodeMap = new Map(jsonSource.glyphs.map(glyph => [`${prefix}${glyph.font_class}`, glyph.unicode]))
 
   return function ({ addUtilities }) {
     const iconUtilities: Record<string, Record<string, string>> = {}
-    for (const [name, svg] of svgMap) {
-      const unicode = unicodeMap.get(name) ?? ''
+    for (const [name, unicode] of unicodeMap) {
+      const svg = svgMap.get(name)
+      if (!svg) {
+        console.warn(`[iconfontail] icon "${name}" found in JSON but missing in JS file, skipped.`)
+        continue
+      }
       const uri = `url("data:image/svg+xml;utf8,${encodeSvg(svg)}")`
       const mode = svg.includes('currentColor') ? 'mask' : 'background'
       iconUtilities[`.${name}.color`] = {
@@ -46,8 +69,8 @@ const plugin: (opts: Options) => any = createPlugin.withOptions<Options>((opts) 
         width: '1em',
       }
       iconUtilities[`.${name}.font::before`] = {
-        content: `"${unicode}"`,
-        fontFamily: 'iconfont',
+        content: `"\\${unicode}"`,
+        fontFamily,
       }
     }
     addUtilities(iconUtilities)
