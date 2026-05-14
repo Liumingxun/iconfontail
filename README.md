@@ -47,17 +47,17 @@
 <i class="icon-home font"></i>
 ```
 
-> 使用字体模式时，需确保页面已加载 iconfont 的字体文件（在 `iconfont.css` 中已通过 `@font-face` 引入）。
+> 使用字体模式时，需确保页面已加载 iconfont 的字体文件（在 `global.css` 中已通过 `@font-face` 引入）。
 
 ## FAQ
 
 - 怎么修改图标大小？
 
-  使用任意可以修改 `font-size` 的方法，如 tailwind 的 `text-3xl`，或直接设置 `font-size`。
+  使用任意可以修改 `font-size` 的方法，如 tailwind 的 `text-3xl`。
 
 - 怎么修改图标颜色？
 
-  color 模式下如果原始 svg 定义了颜色，则不支持修改颜色；如果原始 svg 使用 currentColor
+  color 模式下如果原始 svg 定义了颜色，则不支持修改颜色；如果原始 svg 使用 currentColor 作为填充色，则可以使用任意可以修改 `color` 的方法，如 tailwind 的 `text-blue-500`。
 
 ## 工作原理
 
