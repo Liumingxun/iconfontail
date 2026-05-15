@@ -6,6 +6,9 @@
   "description": "iconfontail 可以用来集成 iconfont.cn 的图标到 Tailwind CSS 中，并借助 Tree Shaking 优化图标体积。",
   "author": "lime <liumingxun@yeah.net>",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/Liumingxun/iconfontail"
+  },
   "keywords": [
     "iconfont",
     "iconfont-cn",
@@ -27,7 +30,8 @@
     "dev": "bunup --watch",
     "build": "bunup",
     "prepublishOnly": "bun run build",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "release": "bunx bumpp --commit --push --tag"
   },
   "peerDependencies": {
     "tailwindcss": "4"
