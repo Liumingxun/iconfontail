@@ -49,7 +49,7 @@ iconfontail 是一个将 [iconfont.cn](https://iconfont.cn) 图标集成到 Tail
 
 规则：
 
-- 图标前缀由 `css_prefix_text` 定义
+- 图标前缀由 `$.css_prefix_text` 定义
 - 图标名称由 `$.glyphs[*].font_class` 定义
 
 ```html

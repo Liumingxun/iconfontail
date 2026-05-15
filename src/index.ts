@@ -2,27 +2,6 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import createPlugin from 'tailwindcss/plugin'
 
-interface IconfontJson {
-  id: string
-  name: string
-  font_family: string
-  css_prefix_text: string
-  description: string
-  glyphs: Glyph[]
-}
-
-interface Glyph {
-  icon_id: string
-  name: string
-  font_class: string
-  unicode: string
-  unicode_decimal: number
-}
-
-interface Options {
-  iconfontjs: string
-  iconfontjson: string
-}
 const symbolTag = /<symbol\s[^>]*?\bid="([^"]+)"[^>]*>(.*?)<\/symbol>/gi
 
 function encodeSvg(svg: string) {
@@ -78,3 +57,25 @@ const plugin: (opts: Options) => any = createPlugin.withOptions<Options>((opts) 
 })
 
 export default plugin
+
+interface IconfontJson {
+  id: string
+  name: string
+  font_family: string
+  css_prefix_text: string
+  description: string
+  glyphs: Glyph[]
+}
+
+interface Glyph {
+  icon_id: string
+  name: string
+  font_class: string
+  unicode: string
+  unicode_decimal: number
+}
+
+interface Options {
+  iconfontjs: string
+  iconfontjson: string
+}
