@@ -1,78 +1,108 @@
-# Iconfontail
+# iconfontail
 
-Iconfontail is a powerful and easy-to-use tool for managing and using icon fonts with tailwindcss in your web projects.
+iconfontail 是一个将 [iconfont.cn](https://iconfont.cn) 图标集成到 Tailwind CSS v4 的插件，支持 Tree Shaking 自动优化图标体积。
 
-## Features
+## 特性
 
-- Simple integration with your web projects
-- Support for multiple icon font libraries
-- Easy customization of icons
-- Lightweight and fast
+- 简单集成：轻松将 iconfont 图标库与 Tailwind CSS 项目结合。
+- 多种模式：支持 SVG 和字体图标两种渲染模式。
+- 高效优化：未使用的图标类会在构建时自动移除，减少最终产物体积。
+- 灵活定制：支持自定义图标大小、颜色等样式。
 
-## Installation
+## 安装
 
-|           npm           |           pnpm           |           yarn           |
-|:-----------------------:|:------------------------:|:------------------------:|
-| npm install iconfontail | pnpm install iconfontail | yarn install iconfontail |
+> **依赖要求**：需要 Tailwind CSS v4
 
-## Usage
+|           npm           |           pnpm           |           bun           |
+| :---------------------: | :----------------------: | :---------------------: |
+| npm install iconfontail | pnpm install iconfontail | bun install iconfontail |
 
-If you are using [iconfont](https://www.iconfont.cn/) as your icon source:
+## 快速开始
 
-- You can download your icon zip file, and after unzipping it, you will see the `iconfont.js` file
-- Place this file in your project
-- Import this plugin in the tailwind configuration file, passing in the relative path of `iconfont.js`
-- Use it where you need it, without worrying about the file size
+### 1. 下载 iconfont 资源
 
-```ts
-export default {
-  // ……
-  plugins: [
-    iconfontail({
-      source: './iconfont.js', // hard to parse, using `regexp` to extract
-    }),
-  ],
-  // ……
+从 [iconfont.cn](https://iconfont.cn) 项目页面**下载至本地**，解压后将 `iconfont.js` 和 `iconfont.json` 以及相应的字体文件放入项目中。
+
+### 2. 配置 Tailwind CSS v4
+
+在 Tailwind CSS 入口文件中引入插件：
+
+```css
+@import 'tailwindcss';
+@plugin 'iconfontail' {
+  /* 路径相对项目根目录 */
+  iconfontjs: iconfont.js;
+  iconfontjson: iconfont.json;
+}
+
+@font-face {
+  /* font-family 应该与 iconfont.json 中相同 */
+  font-family: 'iconfont';
+  src:
+    url('/iconfont.woff2?t=1778462439025') format('woff2'),
+    url('/iconfont.woff?t=1778462439025') format('woff'),
+    url('/iconfont.ttf?t=1778462439025') format('truetype');
 }
 ```
 
-Or you can pass a Record directly as the source parameter for a JSON-like file:
+### 3. 在 HTML 中使用
 
-- such as [icones](https://icones.js.org/), you can pick some icons add to your bag
-- and then you click `Download Zip`, choose `JSON`:
+规则：
 
-```ts
-import icones from './icones-bags.json'
+- 图标前缀由 `$.css_prefix_text` 定义
+- 图标名称由 `$.glyphs[*].font_class` 定义
 
-export default {
-  // ……
-  plugins: [
-    iconfontail({
-      source: icones.reduce((acc, { name, svg }) => {
-        acc[name] = svg
-        return acc
-      }, {}),
-    }),
-  ],
-  // ……
-}
+```html
+<!-- color 模式：显示原始 SVG 定义的颜色 -->
+<i class="icon-home color"></i>
+
+<!-- font 模式：使用 Unicode 渲染 -->
+<i class="icon-home font"></i>
 ```
 
-above situation see [example](https://github.com/Liumingxun/iconfontail/blob/main/example/tailwind.config.js)
+> [!IMPORTANT]  
+> 使用字体模式时，需确保页面已加载 iconfont 的字体文件
 
-Or if you are using the others with a non-JSON-like file:
+## 常见问题
 
-- Copy the file that contains all SVG resources into your project
-- Import this plugin in the tailwind configuration file, passing in the relative path of that file
-- Pass an extract function as the plugin parameter, which should return a record of icon names and their content
+### 如何修改图标大小？
 
-  **Notice**: the icon content should start with the `<svg>` root element that includes the `viewBox` attribute.  
+使用任意可以修改 `font-size` 的方法，例如：
 
-- That's all! You can use it as needed!
+```html
+<i class="icon-home color text-3xl"></i>
+```
 
-## Contributing
+### 如何修改图标颜色？
 
-We welcome contributions! We're excited that you're interested in contributing to this project! Please feel free to open an issue or submit a pull request.
+- **color 模式**：如果原始 SVG 使用 `currentColor` 作为填充色，可以通过修改 `color` 属性：
+
+```html
+<i class="icon-home color text-blue-500"></i>
+```
+
+- **font 模式**：直接修改 `color` 属性：
+
+```html
+<i class="icon-home font text-red-500"></i>
+```
+
+## 工作原理
+
+iconfontail 通过以下步骤实现图标集成和优化：
+
+1. **解析资源文件**：
+   - 读取 `iconfont.json` 文件，解析 Unicode 映射和字体元信息。
+   - 读取 `iconfont.js` 文件，提取 `<symbol>` 标签解析 SVG 图标。
+   - 通过 `iconfont.json` 中的 `glyphs` 去索引 js 中 SVG 图标。
+
+2. **生成工具类**：
+   - 为每个图标生成两类工具类：
+     - **`.iconName.color`**：将 SVG 图标内联为 `mask-image` 或 `background-image`，支持 `currentColor` 填充。
+     - **`.iconName.font::before`**：通过伪元素 `::before` 渲染 Unicode 字符。
+
+3. **Tree Shaking 优化**：
+   - 通过 Tailwind CSS 的工具类注册机制，未使用的图标类会在构建时被自动移除，减少最终产物体积。
 
 ## Inspire and Thanks
 
@@ -80,4 +110,4 @@ We welcome contributions! We're excited that you're interested in contributing t
 
 ## License
 
-[MIT LICENSE](LICENSE)
+[MIT](./LICENSE)

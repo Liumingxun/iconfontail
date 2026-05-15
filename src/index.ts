@@ -1,76 +1,81 @@
-import plugin from 'tailwindcss/plugin'
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import createPlugin from 'tailwindcss/plugin'
 
-type IconName = string
-type IconContent = string
-
-type Options = {
-  /**
-   * Path to the SVG file or a record of icon names and their content
-   */
-  source: string | Record<string, string>
-  /**
-   * Prefix for the generated icon classes
-   */
-  prefix?: string
-  /**
-   * Extract function to parse the SVG source and return a record of icon names and their content
-   * @param source All of SVG string that was read from the source file
-   * @returns A record of icon names and their content
-   */
-  extract?: (source: string) => Record<IconName, IconContent>
-}
+const symbolTag = /<symbol\s[^>]*?\bid="([^"]+)"[^>]*>(.*?)<\/symbol>/gi
 
 function encodeSvg(svg: string) {
   return svg
-    .replace(/"/g, '\'')
-    .replace(/%/g, '%25')
-    .replace(/#/g, '%23')
-    .replace(/\{/g, '%7B')
-    .replace(/\}/g, '%7D')
-    .replace(/</g, '%3C')
-    .replace(/>/g, '%3E')
+    .replaceAll('"', '\'')
+    .replaceAll('%', '%25')
+    .replaceAll('#', '%23')
+    .replaceAll('{', '%7B')
+    .replaceAll('}', '%7D')
+    .replaceAll('<', '%3C')
+    .replaceAll('>', '%3E')
 }
 
-export default plugin.withOptions<Options>((options) => {
-  const prefix = options.prefix ?? ''
-  let icons: Record<string, string> = {}
-
-  if (typeof options.source === 'string') {
-    const source = readFileSync(resolve(options.source), 'utf-8')
-
-    if (!options.extract) {
-      const regex = /<symbol id="([^"]+)".*?>(.*?)<\/symbol>/gim;
-      for (const match of source.matchAll(regex)) {
-        const [_, name, content] = match;
-        icons[name] = `<svg version="1.1" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">${content}</svg>`;
-      }
-    } else {
-      icons = options.extract(source)
-    }
-  } else {
-    icons = options.source
+const plugin: (opts: Options) => any = createPlugin.withOptions<Options>((opts) => {
+  if (!opts || !opts.iconfontjs || !opts.iconfontjson) {
+    console.warn('Iconfont plugin requires iconfontjs and iconfontjson options!')
+    console.warn('Iconfont plugin will be skipped.')
+    return () => {}
   }
 
-  return ({ addUtilities }) => {
-    const iconUtilities = Object.entries(icons).reduce((acc, [name, content]) => {
-      const className = `.${prefix}${name}`;
-      const uri = `url("data:image/svg+xml;utf8,${encodeSvg(content)}")`
-      const mode = content.includes('currentColor') ? 'mask' : 'background'
-      return {
-        ...acc,
-        [className]: {
-          [mode]: `${uri} no-repeat center`,
-          backgroundColor: mode === 'mask' ? 'currentColor' : 'transparent',
-          height: '1em',
-          width: '1em',
-        }
-      }
-    }, {})
+  const jsSource = readFileSync(resolve(opts.iconfontjs), 'utf-8')
+  const jsonSource = JSON.parse(readFileSync(resolve(opts.iconfontjson), 'utf-8')) as IconfontJson
 
-    addUtilities(iconUtilities, {
-      respectPrefix: true
-    })
+  const fontFamily = jsonSource.font_family
+  const prefix = jsonSource.css_prefix_text
+
+  const svgMap = new Map(Array.from(jsSource.matchAll(symbolTag), ([, name, content]) => [name, `<svg version="1.1" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">${content}</svg>`]))
+  const unicodeMap = new Map(jsonSource.glyphs.map(glyph => [`${prefix}${glyph.font_class}`, glyph.unicode]))
+
+  return function ({ addUtilities }) {
+    const iconUtilities: Record<string, Record<string, string>> = {}
+    for (const [name, unicode] of unicodeMap) {
+      const svg = svgMap.get(name)
+      if (!svg) {
+        console.warn(`[iconfontail] icon "${name}" found in JSON but missing in JS file, skipped.`)
+        continue
+      }
+      const uri = `url("data:image/svg+xml;utf8,${encodeSvg(svg)}")`
+      const mode = svg.includes('currentColor') ? 'mask' : 'background'
+      iconUtilities[`.${name}.color`] = {
+        [mode]: `${uri} no-repeat center`,
+        backgroundColor: mode === 'mask' ? 'currentColor' : 'transparent',
+        height: '1em',
+        width: '1em',
+      }
+      iconUtilities[`.${name}.font::before`] = {
+        content: `"\\${unicode}"`,
+        fontFamily,
+      }
+    }
+    addUtilities(iconUtilities)
   }
 })
+
+export default plugin
+
+interface IconfontJson {
+  id: string
+  name: string
+  font_family: string
+  css_prefix_text: string
+  description: string
+  glyphs: Glyph[]
+}
+
+interface Glyph {
+  icon_id: string
+  name: string
+  font_class: string
+  unicode: string
+  unicode_decimal: number
+}
+
+interface Options {
+  iconfontjs: string
+  iconfontjson: string
+}
